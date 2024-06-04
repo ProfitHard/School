@@ -1,0 +1,50 @@
+using System;
+using System.Threading;
+
+class Foo
+{
+    private volatile bool onePrinted;
+    private volatile bool twoPrinted;
+
+    public Foo()
+    {
+        onePrinted = false;
+        twoPrinted = false;
+    }
+
+    public void First(Action printFirst)
+    {
+        lock (this)
+        {
+            printFirst();
+            onePrinted = true;
+            Monitor.PulseAll(this);
+        }
+    }
+
+    public void Second(Action printSecond)
+    {
+        lock (this)
+        {
+            while (!onePrinted)
+            {
+                Monitor.Wait(this);
+            }
+            printSecond();
+            twoPrinted = true;
+            Monitor.PulseAll(this);
+        }
+    }
+
+    public void Third(Action printThird)
+    {
+        lock (this)
+        {
+            while (!twoPrinted)
+            {
+                Monitor.Wait(this);
+            }
+            printThird();
+        }
+    }
+}
